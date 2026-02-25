@@ -1,0 +1,469 @@
+# Query Expansion Configuration for CyberArk RAG
+#
+# This file defines semantic aliases and related terms to improve search accuracy
+# across CyberArk products and concepts.
+#
+# Format:
+#   primary_term:
+#     - alias1
+#     - alias2
+#
+# When a user searches for any term (primary or alias), all related terms are included.
+
+# ============================================================================
+# MACHINE IDENTITY SECURITY / SECRETS MANAGEMENT
+# ============================================================================
+
+# SPIRE/SPIFFE - Critical gap identified in audit
+spire:
+  - spiffe
+  - csi driver spiffe
+  - csi-driver-spiffe
+  - workload identity
+  - service identity
+  - svid
+  - spiffe verifiable identity
+  - trust domain
+
+spiffe:
+  - spire
+  - csi driver spiffe
+  - workload identity
+  - svid
+
+# Secrets Management terminology
+secrets manager:
+  - conjur
+  - dap
+  - secrets hub
+  - vault synchronizer
+  - credential provider
+  - ccp
+  - central credential provider
+
+conjur:
+  - dap
+  - secrets manager
+  - conjur cloud
+  - conjur enterprise
+  - conjur open source
+  - cyberark dap
+
+dap:
+  - conjur
+  - secrets manager
+  - dynamic access provider
+
+# ============================================================================
+# PRIVILEGE ACCESS MANAGEMENT (PAM)
+# ============================================================================
+
+pam:
+  - privilege access management
+  - privileged access
+  - pas
+  - privilege cloud
+  - pam self-hosted
+
+privilege cloud:
+  - pam
+  - privcloud
+  - privilege cloud standard
+  - privilege cloud shared services
+
+psm:
+  - privileged session manager
+  - session manager
+  - session monitoring
+  - privileged session monitoring
+
+cpm:
+  - central policy manager
+  - password manager
+  - credential rotation
+  - secrets rotation
+
+# ============================================================================
+# AUTHENTICATION & AUTHORIZATION
+# ============================================================================
+
+# JWT Authentication - Gap identified in audit
+jwt:
+  - jwt auth
+  - jwt-auth
+  - jwt authentication
+  - json web token
+  - bearer token
+  - token authentication
+  - token-based auth
+  - token-based authentication
+
+# OAuth and OIDC
+oauth:
+  - oauth2
+  - oauth 2.0
+  - openid connect
+  - oidc
+
+oidc:
+  - openid connect
+  - oauth
+  - oauth2
+
+# SAML
+saml:
+  - saml2
+  - saml 2.0
+  - saml authentication
+  - saml sso
+
+# Multi-factor Authentication
+mfa:
+  - multi-factor authentication
+  - multi factor authentication
+  - two-factor authentication
+  - 2fa
+  - multifactor auth
+
+# Single Sign-On
+sso:
+  - single sign-on
+  - single sign on
+  - identity federation
+  - federated authentication
+
+# ============================================================================
+# ACCOUNT & CREDENTIAL MANAGEMENT
+# ============================================================================
+
+# Dual Accounts - Gap identified in audit
+dual account:
+  - dual-account
+  - dual control
+  - two-person rule
+  - two person rule
+  - maker-checker
+  - maker checker
+  - dual authority
+  - split knowledge
+
+dual control:
+  - dual account
+  - dual-account
+  - two-person rule
+  - maker-checker
+
+# Credential types
+credential:
+  - password
+  - secret
+  - api key
+  - access key
+  - ssh key
+  - certificate
+  - token
+
+secret:
+  - credential
+  - password
+  - api key
+  - access token
+
+# Rotation terminology
+rotate:
+  - rotation
+  - change password
+  - credential rotation
+  - secret rotation
+  - password rotation
+  - refresh
+
+# ============================================================================
+# PLATFORMS & TECHNOLOGIES
+# ============================================================================
+
+# Kubernetes
+kubernetes:
+  - k8s
+  - kube
+  - openshift
+  - ocp
+  - rancher
+  - eks
+  - aks
+  - gke
+
+k8s:
+  - kubernetes
+  - openshift
+  - ocp
+
+openshift:
+  - kubernetes
+  - k8s
+  - ocp
+  - red hat openshift
+
+# Cloud Providers
+aws:
+  - amazon web services
+  - amazon
+  - ec2
+  - iam
+  - eks
+  - lambda
+
+azure:
+  - microsoft azure
+  - aks
+  - entra
+  - entra id
+  - active directory
+
+gcp:
+  - google cloud
+  - google cloud platform
+  - gke
+
+# Certificate Management
+certificate:
+  - cert
+  - x509
+  - x.509
+  - ssl
+  - tls
+  - pki
+
+cert:
+  - certificate
+  - x509
+  - ssl
+  - tls
+
+# ============================================================================
+# DEPLOYMENT & CONFIGURATION
+# ============================================================================
+
+# Setup terminology
+setup:
+  - configure
+  - configuration
+  - install
+  - installation
+  - deploy
+  - deployment
+  - initialize
+  - initialization
+
+configure:
+  - configuration
+  - setup
+  - config
+  - enable
+  - set up
+
+install:
+  - installation
+  - deploy
+  - deployment
+  - setup
+
+# Getting Started - Gap identified in audit
+getting started:
+  - quickstart
+  - quick start
+  - tutorial
+  - first steps
+  - begin
+  - introduction
+  - getting-started
+
+quickstart:
+  - getting started
+  - quick start
+  - tutorial
+  - guide
+
+# ============================================================================
+# INTEGRATIONS
+# ============================================================================
+
+# CI/CD
+cicd:
+  - ci/cd
+  - ci cd
+  - jenkins
+  - gitlab
+  - github actions
+  - azure devops
+  - bitbucket
+
+jenkins:
+  - ci/cd
+  - pipeline
+  - continuous integration
+
+# Service Mesh
+service mesh:
+  - istio
+  - linkerd
+  - consul
+  - envoy
+
+istio:
+  - service mesh
+  - sidecar
+  - envoy
+
+# Database
+database:
+  - db
+  - sql
+  - mysql
+  - postgresql
+  - postgres
+  - oracle
+  - mssql
+  - mongodb
+
+# ============================================================================
+# ENDPOINT & IDENTITY
+# ============================================================================
+
+# EPM
+epm:
+  - endpoint privilege manager
+  - endpoint privilege management
+  - least privilege
+  - application control
+
+# Identity
+identity:
+  - idaptive
+  - cyberark identity
+  - identity platform
+  - identity security platform
+  - ispss
+
+# Directory Services
+ldap:
+  - active directory
+  - ad
+  - directory service
+  - directory services
+
+active directory:
+  - ldap
+  - ad
+  - microsoft ad
+
+# ============================================================================
+# ACCESS & CONNECTIVITY
+# ============================================================================
+
+# Remote Access
+remote access:
+  - alero
+  - vendor access
+  - third party access
+  - third-party access
+
+# SSH
+ssh:
+  - secure shell
+  - psmp
+  - ssh proxy
+  - ssh tunnel
+
+# RDP
+rdp:
+  - remote desktop
+  - remote desktop protocol
+  - windows remote
+
+# ============================================================================
+# SECURITY & COMPLIANCE
+# ============================================================================
+
+# Zero Trust
+zero trust:
+  - zero-trust
+  - zta
+  - zero trust architecture
+  - least privilege
+
+# Security
+hardening:
+  - security hardening
+  - secure configuration
+  - security best practices
+
+# Audit
+audit:
+  - logging
+  - monitoring
+  - compliance
+  - siem
+  - audit trail
+
+# ============================================================================
+# COMMON ABBREVIATIONS & MISSPELLINGS
+# ============================================================================
+
+# Common typos
+priviledge:
+  - privilege
+
+authentification:
+  - authentication
+
+authorisation:
+  - authorization
+
+# Common abbreviations
+config:
+  - configuration
+  - configure
+
+auth:
+  - authentication
+  - authorization
+
+creds:
+  - credentials
+  - credential
+
+pw:
+  - password
+
+# ============================================================================
+# PRODUCT-SPECIFIC TERMS
+# ============================================================================
+
+# Credential Providers
+credential provider:
+  - cp
+  - ccp
+  - aacp
+  - ascp
+  - application server credential provider
+  - central credential provider
+
+# Vault
+vault:
+  - cyberark vault
+  - digital vault
+  - password vault
+  - pvwa
+
+pvwa:
+  - password vault web access
+  - web access
+  - vault web access
+
+# Connectors
+connector:
+  - cpm
+  - psm connector
+  - privilege cloud connector
+  - vault connector

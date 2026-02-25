@@ -1,0 +1,17 @@
+[project]
+name = "cyberark-rag"
+version = "2.0.0"
+description = "RAG system for CyberArk documentation with MCP server integration"
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+markers = [
+    "slow: marks tests that take >2s (deselect with '-m \"not slow\"')",
+    "integration: marks tests requiring built index",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning:chromadb.*",
+    "ignore::DeprecationWarning:sentence_transformers.*",
+]

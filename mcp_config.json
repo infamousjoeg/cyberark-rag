@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "cyberark-rag": {
+      "command": "python3",
+      "args": [
+        "-m",
+        "cyberark_rag.mcp_server"
+      ],
+      "env": {
+        "PYTHONPATH": "."
+      },
+      "disabled": false
+    }
+  }
+}

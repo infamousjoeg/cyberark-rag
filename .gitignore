@@ -1,0 +1,35 @@
+# Data files (too large for git)
+scraped_docs/
+chroma_db/
+chroma_db.backup/
+chroma_db.backup_*/
+bm25_index.pkl
+scraper_state.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env

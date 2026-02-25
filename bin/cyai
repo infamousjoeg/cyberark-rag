@@ -1,0 +1,92 @@
+#!/usr/bin/env python3
+"""
+CyAI - CyberArk AI Terminal Assistant
+
+Natural language commands powered by CyberArk documentation + Ollama.
+
+Usage:
+    cyai <natural language command>
+
+Examples:
+    cyai configure spire server for kubernetes
+    cyai show conjur authentication methods
+    cyai rotate secrets in privilege cloud
+"""
+
+import sys
+from pathlib import Path
+
+# Add project root to Python path
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
+
+from cyberark_rag.terminal import execute_with_confirmation, Config
+
+def main():
+    """Main entry point for cyai command."""
+    if len(sys.argv) < 2:
+        print("CyAI - CyberArk AI Terminal Assistant")
+        print()
+        print("Usage: cyai <natural language command>")
+        print()
+        print("Examples:")
+        print("  cyai configure spire server for kubernetes")
+        print("  cyai show conjur authentication methods")
+        print("  cyai rotate secrets in privilege cloud")
+        print()
+        print("Options:")
+        print("  --auto           Auto-execute without confirmation")
+        print("  --show-context   Show documentation context")
+        print("  --config PATH    Custom config.yaml path")
+        sys.exit(1)
+
+    # Parse flags
+    auto_execute = False
+    show_context = False
+    config_path = None
+    query_parts = []
+
+    i = 1
+    while i < len(sys.argv):
+        arg = sys.argv[i]
+        if arg == '--auto':
+            auto_execute = True
+        elif arg == '--show-context':
+            show_context = True
+        elif arg == '--config':
+            i += 1
+            if i < len(sys.argv):
+                config_path = sys.argv[i]
+        else:
+            query_parts.append(arg)
+        i += 1
+
+    if not query_parts:
+        print("Error: No query provided")
+        sys.exit(1)
+
+    # Load config
+    config = Config(config_path) if config_path else Config()
+
+    # Override config with flags
+    if show_context:
+        config.config['execution']['show_context'] = True
+
+    # Execute
+    natural_language = ' '.join(query_parts)
+    execute_with_confirmation(
+        natural_language=natural_language,
+        config=config,
+        auto_execute=auto_execute
+    )
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\n❌ Interrupted")
+        sys.exit(130)
+    except Exception as e:
+        print(f"❌ Error: {e}")
+        sys.exit(1)

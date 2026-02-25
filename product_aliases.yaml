@@ -1,0 +1,320 @@
+# Product Aliases Configuration
+# Maps raw product_category values from URLs to canonical product names
+#
+# Structure:
+#   canonical_name:
+#     display_name: "Human-readable product name"
+#     aliases: [list of old names, acronyms, URL patterns that map to this product]
+#     category: "product" | "deprecated" | "metadata" | "navigation"
+#     description: "Brief description"
+
+# === ACTIVE PRODUCTS ===
+
+secrets-manager-saas:
+  display_name: "Conjur Cloud (Secrets Manager SaaS)"
+  aliases:
+    - conjur-cloud
+    - secrets-manager-saas
+  category: product
+  description: "Cloud-based secrets management"
+
+secrets-manager-sh:
+  display_name: "Conjur Enterprise (Secrets Manager Self-Hosted)"
+  aliases:
+    - conjur-enterprise
+    - secrets-manager-sh
+    - AAM-DAP
+  category: product
+  description: "Self-hosted secrets management (formerly Conjur Enterprise, AAM-DAP)"
+
+conjur-open-source:
+  display_name: "Conjur Open Source"
+  aliases:
+    - conjur-open-source
+  category: product
+  description: "Open source version of Conjur"
+
+pam-self-hosted:
+  display_name: "Privileged Access Manager (Self-Hosted)"
+  aliases:
+    - pam-self-hosted
+    - PAS
+    - pas
+  category: product
+  description: "Self-hosted PAM solution (formerly PAS - Privileged Access Security)"
+
+privilege-cloud-standard:
+  display_name: "Privilege Cloud (Standard)"
+  aliases:
+    - privilege-cloud-standard
+    - PrivCloud
+  category: product
+  description: "Cloud-based privileged access management (standard tier)"
+
+privilege-cloud-shared-services:
+  display_name: "Privilege Cloud (Shared Services)"
+  aliases:
+    - privilege-cloud-shared-services
+    - PrivCloud-SS
+    - privcloud-ss
+  category: product
+  description: "Privilege Cloud shared services tier"
+
+privilege-cloud-secrets-rotation:
+  display_name: "Privilege Cloud Secrets Rotation"
+  aliases:
+    - privilege-cloud-secrets-rotation
+  category: product
+  description: "Secrets rotation in Privilege Cloud"
+
+credential-providers:
+  display_name: "Credential Providers"
+  aliases:
+    - credential-providers
+  category: product
+  description: "Credential provider integrations"
+
+endpoint-privilege-manager:
+  display_name: "Endpoint Privilege Manager (EPM)"
+  aliases:
+    - epm
+  category: product
+  description: "Endpoint privilege elevation and management"
+
+identity:
+  display_name: "Identity Security Platform"
+  aliases:
+    - identity
+    - identity-administration
+  category: product
+  description: "Identity and access management platform"
+
+identity-shared-services:
+  display_name: "Identity Security Platform Shared Services (ISPSS)"
+  aliases:
+    - ispss-access
+    - ispss-deployment
+    - ispss-get-started
+  category: product
+  description: "Identity platform shared services"
+
+identity-governance:
+  display_name: "Identity Governance & Administration (IGA)"
+  aliases:
+    - iga
+    - identity-compliance
+    - identitycompliance
+  category: product
+  description: "Identity governance and compliance"
+
+identity-flows:
+  display_name: "Identity Flows"
+  aliases:
+    - identity-flows
+    - identityflows
+  category: product
+  description: "Identity workflow automation"
+
+secure-cloud-access:
+  display_name: "Secure Cloud Access (SCA)"
+  aliases:
+    - sca
+    - sca-ft
+    - SCA
+  category: product
+  description: "Secure cloud access and CASB"
+
+dynamic-privileged-access:
+  display_name: "Dynamic Privileged Access (DPA)"
+  aliases:
+    - dpa
+  category: product
+  description: "Just-in-time privileged access"
+
+remote-access:
+  display_name: "Remote Access"
+  aliases:
+    - alero
+    - alero-platform
+    - remote-access-standard
+    - remote-access-shared-services
+    - remote-access-on-prem
+  category: product
+  description: "Secure remote access (formerly Alero)"
+
+secure-web-sessions:
+  display_name: "Secure Web Sessions (SWS)"
+  aliases:
+    - sws
+  category: product
+  description: "Isolated web browsing"
+
+workforce-password-management:
+  display_name: "Workforce Password Management (WPM)"
+  aliases:
+    - wpm
+  category: product
+  description: "Employee password management"
+
+secrets-hub:
+  display_name: "Secrets Hub"
+  aliases:
+    - secrets-hub-pam-sh
+    - secrets-hub-privilege-cloud
+  category: product
+  description: "Centralized secrets management hub"
+
+machine-identity-security-saas:
+  display_name: "Machine Identity Security (SaaS)"
+  aliases:
+    - mis-saas
+  category: product
+  description: "Cloud-based machine identity security"
+
+machine-identity-security-sh:
+  display_name: "Machine Identity Security (Self-Hosted)"
+  aliases:
+    - mis-self-hosted
+  category: product
+  description: "Self-hosted machine identity security"
+
+identity-security-intelligence:
+  display_name: "Identity Security Intelligence (ISI)"
+  aliases:
+    - isi
+  category: product
+  description: "Identity threat detection and analytics"
+
+# === PRODUCT SPACES / PORTALS ===
+
+admin-space:
+  display_name: "Admin Space"
+  aliases:
+    - admin-space
+  category: navigation
+  description: "Administrative portal"
+
+secure-access-space:
+  display_name: "Secure Access Space"
+  aliases:
+    - secure-access-space
+  category: navigation
+  description: "Secure access portal"
+
+identity-protection-space:
+  display_name: "Identity Protection Space"
+  aliases:
+    - identity-protection-space
+  category: navigation
+  description: "Identity protection portal"
+
+cloud-visibility:
+  display_name: "Cloud Visibility"
+  aliases:
+    - cloud-visibility
+  category: navigation
+  description: "Cloud visibility dashboard"
+
+secure-browser:
+  display_name: "Secure Browser"
+  aliases:
+    - secure-browser
+  category: navigation
+  description: "Secure browser component"
+
+connector-management:
+  display_name: "Connector Management"
+  aliases:
+    - connector-management
+  category: navigation
+  description: "Connector management portal"
+
+msp-hub:
+  display_name: "MSP Hub"
+  aliases:
+    - msp-hub
+  category: navigation
+  description: "Managed service provider hub"
+
+# === DEPRECATED PRODUCTS ===
+
+cyberark-blueprint:
+  display_name: "CyberArk Blueprint (Deprecated)"
+  aliases:
+    - cyberark-blueprint
+  category: deprecated
+  description: "Deprecated architecture blueprint"
+
+cem:
+  display_name: "Cloud Entitlements Manager (Deprecated)"
+  aliases:
+    - CEM
+    - cs-cem
+  category: deprecated
+  description: "Deprecated cloud entitlements manager"
+
+ai:
+  display_name: "AI Features (Deprecated)"
+  aliases:
+    - ai
+  category: deprecated
+  description: "Deprecated AI capabilities"
+
+audit:
+  display_name: "Audit (Deprecated)"
+  aliases:
+    - audit
+  category: deprecated
+  description: "Deprecated audit component"
+
+# === METADATA / NON-PRODUCT CATEGORIES ===
+
+documentation:
+  display_name: "Documentation"
+  aliases:
+    - Product-Doc
+  category: metadata
+  description: "General documentation category"
+
+early-release:
+  display_name: "Early Release"
+  aliases:
+    - early-release
+  category: metadata
+  description: "Early release documentation"
+
+end-of-life:
+  display_name: "End of Life"
+  aliases:
+    - EOL
+    - eol
+    - end-of-life-policy
+  category: metadata
+  description: "End of life documentation"
+
+legal:
+  display_name: "Legal"
+  aliases:
+    - Legal
+    - legal
+    - third-party-notices
+  category: metadata
+  description: "Legal notices and third-party information"
+
+general:
+  display_name: "General"
+  aliases:
+    - general
+  category: metadata
+  description: "General uncategorized content"
+
+portal-navigation:
+  display_name: "Portal Navigation"
+  aliases:
+    - Portal
+    - portal
+    - guided-workflows
+    - set-up-privileged-access
+    - getstartedispss
+  category: navigation
+  description: "Portal navigation and setup workflows"

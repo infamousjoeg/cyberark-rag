@@ -1,0 +1,28 @@
+# CyberArk RAG Terminal Configuration
+
+# Ollama settings
+ollama:
+  # Ollama API endpoint
+  endpoint: http://localhost:11434
+
+  # Model to use for command generation
+  # Options: llama3.1, llama3.2, codellama, mistral, etc.
+  model: llama3.1
+
+# MCP server settings
+mcp:
+  # Path to Python 3.10+ interpreter with MCP installed
+  python_path: python3
+
+  # Maximum number of documentation chunks to use as context
+  # Higher values provide more context but slower generation
+  max_context_chunks: 3
+
+# Execution settings
+execution:
+  # Auto-execute commands without confirmation (dangerous!)
+  # Set to true only if you trust the generated commands
+  auto_execute: false
+
+  # Show CyberArk documentation context before generating command
+  show_context: false

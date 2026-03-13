@@ -43,6 +43,14 @@ class Settings:
     CHUNK_SIZE: int = int(os.environ.get("CYBERARK_RAG_CHUNK_SIZE", "800"))
     CHUNK_OVERLAP: int = int(os.environ.get("CYBERARK_RAG_CHUNK_OVERLAP", "100"))
 
+    # Chatbot settings
+    CHATBOT_MODEL: str = os.environ.get(
+        "CYBERARK_RAG_CHATBOT_MODEL", "claude-sonnet-4-6"
+    )
+    CHATBOT_MAX_TOKENS: int = int(
+        os.environ.get("CYBERARK_RAG_CHATBOT_MAX_TOKENS", "4096")
+    )
+
     # Config files
     PRODUCT_ALIASES_PATH: Path = PROJECT_ROOT / "product_aliases.yaml"
     QUERY_EXPANSIONS_PATH: Path = PROJECT_ROOT / "query_expansions.yaml"

@@ -17,7 +17,7 @@ class TestAliasResolution:
         ("PAS", "pam-self-hosted"),
         ("pas", "pam-self-hosted"),
         ("epm", "endpoint-privilege-manager"),
-        ("dpa", "dynamic-privileged-access"),
+        ("dpa", "secure-infrastructure-access"),
         ("alero", "remote-access"),
     ])
     def test_alias_resolves(self, resolver, raw, canonical):

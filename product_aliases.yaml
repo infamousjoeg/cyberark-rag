@@ -11,21 +11,21 @@
 # === ACTIVE PRODUCTS ===
 
 secrets-manager-saas:
-  display_name: "Conjur Cloud (Secrets Manager SaaS)"
+  display_name: "Secrets Manager, SaaS (formerly Conjur Cloud)"
   aliases:
     - conjur-cloud
     - secrets-manager-saas
   category: product
-  description: "Cloud-based secrets management"
+  description: "Cloud-based secrets management (formerly Conjur Cloud)"
 
 secrets-manager-sh:
-  display_name: "Conjur Enterprise (Secrets Manager Self-Hosted)"
+  display_name: "Secrets Manager, Self-Hosted (formerly Conjur Enterprise, Dynamic Access Provider (DAP))"
   aliases:
     - conjur-enterprise
     - secrets-manager-sh
     - AAM-DAP
   category: product
-  description: "Self-hosted secrets management (formerly Conjur Enterprise, AAM-DAP)"
+  description: "Self-hosted secrets management (formerly Conjur Enterprise, Dynamic Access Provider (DAP))"
 
 conjur-open-source:
   display_name: "Conjur Open Source"
@@ -68,11 +68,16 @@ privilege-cloud-secrets-rotation:
   description: "Secrets rotation in Privilege Cloud"
 
 credential-providers:
-  display_name: "Credential Providers"
+  display_name: "Credential Providers (formerly Application Access Management (AAM), Application Identity Management (AIM))"
   aliases:
     - credential-providers
+    - central-credential-provider
+    - application-server-credential-provider
+    - aam-cp
+    - aam-ccp
+    - aam-ascp
   category: product
-  description: "Credential provider integrations"
+  description: "Credential provider integrations (formerly AAM, AIM)"
 
 endpoint-privilege-manager:
   display_name: "Endpoint Privilege Manager (EPM)"
@@ -124,12 +129,14 @@ secure-cloud-access:
   category: product
   description: "Secure cloud access and CASB"
 
-dynamic-privileged-access:
-  display_name: "Dynamic Privileged Access (DPA)"
+secure-infrastructure-access:
+  display_name: "Secure Infrastructure Access (formerly Dynamic Privileged Access (DPA))"
   aliases:
     - dpa
+    - sia
+    - dynamic-privileged-access
   category: product
-  description: "Just-in-time privileged access"
+  description: "Secure infrastructure access (formerly Dynamic Privileged Access, DPA)"
 
 remote-access:
   display_name: "Remote Access"

@@ -13,11 +13,14 @@ def main():
         print("Usage:")
         print("  python -m cyberark_rag index        - Build the vector index")
         print("  python -m cyberark_rag search       - Search the documentation")
+        print("  python -m cyberark_rag chat          - Chat with Claude about CyberArk docs")
+        print("  python -m cyberark_rag auth          - Manage authentication (login/status/logout)")
         print("  python -m cyberark_rag mcp_server   - Start the MCP server")
         print("  python -m cyberark_rag terminal     - Natural language terminal assistant")
         print("\nFor help on specific commands:")
         print("  python -m cyberark_rag index --help")
         print("  python -m cyberark_rag search --help")
+        print("  python -m cyberark_rag chat --help")
         print("  python -m cyberark_rag terminal --help")
         sys.exit(1)
 
@@ -32,6 +35,12 @@ def main():
     elif command == "search":
         from cyberark_rag.search import main as search_main
         search_main()
+    elif command == "chat":
+        from cyberark_rag.chatbot_cli import main as chat_main
+        chat_main()
+    elif command == "auth":
+        from cyberark_rag.auth import main as auth_main
+        auth_main()
     elif command == "mcp_server":
         from cyberark_rag.mcp_server import main as mcp_server_main
         mcp_server_main()
@@ -40,7 +49,7 @@ def main():
         terminal_main()
     else:
         print(f"Unknown command: {command}")
-        print("Valid commands: index, search, mcp_server, terminal")
+        print("Valid commands: index, search, chat, auth, mcp_server, terminal")
         sys.exit(1)
 
 

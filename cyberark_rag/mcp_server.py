@@ -2,13 +2,18 @@
 MCP Server for CyberArk Documentation Search
 
 Exposes the RAG search functionality as MCP tools for integration
-with Claude Desktop and Claude Code.
+with Claude Desktop, Claude Code, and Claude Web.
 
 Uses FastMCP for automatic schema generation from function signatures.
 All logging goes to stderr; stdout is reserved for MCP JSON-RPC transport.
+
+Supports two transport modes:
+  - stdio: for Claude Desktop and Claude Code (default)
+  - streamable-http: for Claude Web and remote clients
 """
 
 import json
+import os
 import sys
 from typing import Optional
 
@@ -308,8 +313,53 @@ def _format_search_results(results: list, query: str) -> str:
 
 
 def main():
-    """Entry point for the MCP server."""
-    mcp.run(transport="stdio")
+    """Entry point for the MCP server.
+
+    Transport is selected via:
+      - CLI flag: --transport stdio|streamable-http
+      - Env var: MCP_TRANSPORT (default: stdio)
+
+    For streamable-http, the server listens on:
+      - Host: MCP_HOST (default: 0.0.0.0)
+      - Port: PORT or MCP_PORT (default: 8000)
+      - Path: MCP_PATH (default: /mcp)
+    """
+    import argparse
+
+    parser = argparse.ArgumentParser(description="CyberArk RAG MCP Server")
+    parser.add_argument(
+        "--transport",
+        choices=["stdio", "streamable-http"],
+        default=os.environ.get("MCP_TRANSPORT", "stdio"),
+        help="Transport mode (default: stdio, env: MCP_TRANSPORT)",
+    )
+    parser.add_argument(
+        "--host",
+        default=os.environ.get("MCP_HOST", "0.0.0.0"),
+        help="Host to bind (streamable-http only, default: 0.0.0.0)",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=int(os.environ.get("PORT", os.environ.get("MCP_PORT", "8000"))),
+        help="Port to bind (streamable-http only, default: 8000, env: PORT)",
+    )
+    args = parser.parse_args()
+
+    if args.transport == "streamable-http":
+        logger.info(
+            "Starting MCP server (streamable-http) on %s:%d",
+            args.host,
+            args.port,
+        )
+        mcp.run(
+            transport="streamable-http",
+            host=args.host,
+            port=args.port,
+        )
+    else:
+        logger.info("Starting MCP server (stdio)")
+        mcp.run(transport="stdio")
 
 
 if __name__ == "__main__":

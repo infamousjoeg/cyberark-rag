@@ -1,0 +1,44 @@
+# Large data files (not needed in image -- sample_docs used instead)
+scraped_docs/
+chroma_db/
+chroma_db.backup/
+chroma_db.backup_*/
+bm25_index.pkl
+scraper_state.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Git
+.git/
+.gitignore
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docs and tests (not needed in runtime image)
+docs/
+tests/
+.claude/
+
+# Environment
+.env

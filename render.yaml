@@ -1,0 +1,19 @@
+# Render.com deployment configuration
+# Deploy: connect this repo to Render and it auto-detects this file
+# Docs: https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: cyberark-rag-mcp
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: PORT
+        value: "8000"
+      - key: CYBERARK_RAG_MODEL
+        value: all-MiniLM-L6-v2
+      - key: MCP_TRANSPORT
+        value: streamable-http
+      - key: PYTHONUNBUFFERED
+        value: "1"

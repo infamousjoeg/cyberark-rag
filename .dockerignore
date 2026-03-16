@@ -1,4 +1,4 @@
-# Large data files (not needed in image -- sample_docs used instead)
+# Existing large data (built fresh during Docker build)
 scraped_docs/
 chroma_db/
 chroma_db.backup/
@@ -35,10 +35,13 @@ env/
 .DS_Store
 Thumbs.db
 
-# Docs and tests (not needed in runtime image)
-docs/
+# Tests and docs (not needed in runtime image)
 tests/
+docs/
 .claude/
+
+# Legacy scraper (using incremental_scraper.py instead)
+scraper.py
 
 # Environment
 .env

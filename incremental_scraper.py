@@ -171,6 +171,7 @@ class IncrementalScraper:
         delay: float = 0.5,
         full: bool = False,
         dry_run: bool = False,
+        max_pages: int = 0,
     ):
         """
         Initialize the incremental scraper.
@@ -180,11 +181,13 @@ class IncrementalScraper:
             delay: Seconds to wait between requests
             full: If True, scrape all URLs regardless of state
             dry_run: If True, report what would be done without fetching
+            max_pages: Maximum pages to scrape (0 = unlimited)
         """
         self.output_dir = output_dir or Settings.DOCS_DIR
         self.delay = delay
         self.full = full
         self.dry_run = dry_run
+        self.max_pages = max_pages
 
         self.session = requests.Session()
         self.session.headers.update({"User-Agent": USER_AGENT})
@@ -383,6 +386,15 @@ class IncrementalScraper:
             else:
                 self.skipped += 1
 
+        # Apply max_pages limit
+        if self.max_pages > 0 and len(urls_to_scrape) > self.max_pages:
+            logger.info(
+                "Limiting scrape to %d of %d pages (--max-pages)",
+                self.max_pages,
+                len(urls_to_scrape),
+            )
+            urls_to_scrape = urls_to_scrape[:self.max_pages]
+
         logger.info(
             "URLs to scrape: %d (skipping %d unchanged)",
             len(urls_to_scrape),
@@ -472,6 +484,12 @@ def main() -> None:
         default=None,
         help="Output directory for scraped JSON files",
     )
+    parser.add_argument(
+        "--max-pages",
+        type=int,
+        default=0,
+        help="Maximum pages to scrape (0 = unlimited, useful for CI/Docker builds)",
+    )
 
     args = parser.parse_args()
 
@@ -480,6 +498,7 @@ def main() -> None:
         delay=args.delay,
         full=args.full,
         dry_run=args.dry_run,
+        max_pages=args.max_pages,
     )
     scraper.run()
 

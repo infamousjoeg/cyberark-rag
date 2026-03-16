@@ -205,6 +205,9 @@ class IncrementalScraper:
         self.skipped = 0
         self.errors = 0
 
+        # Set to True when BFS crawl already scraped pages during discovery
+        self._crawl_scraped = False
+
     @staticmethod
     def _extract_product_slug(url: str) -> str:
         """Extract the first URL path segment (product slug) from a URL."""
@@ -221,6 +224,11 @@ class IncrementalScraper:
     def fetch_sitemap_urls(self) -> List[Tuple[str, Optional[str]]]:
         """
         Discover URLs from docs.cyberark.com sitemap(s).
+
+        Tries in order:
+          1. Sitemap XML (sitemap.xml, sitemap_index.xml)
+          2. Existing scraped_docs inventory
+          3. BFS crawl starting from docs.cyberark.com root
 
         Returns:
             List of (url, lastmod) tuples. lastmod may be None.
@@ -239,9 +247,15 @@ class IncrementalScraper:
             except Exception as e:
                 logger.debug("Sitemap %s failed: %s", sitemap_url, e)
 
-        # Fallback: inventory existing scraped docs
+        # Fallback 1: inventory existing scraped docs
         logger.warning("No sitemap found, falling back to existing scraped_docs inventory")
-        return self._inventory_existing_docs()
+        existing = self._inventory_existing_docs()
+        if existing:
+            return existing
+
+        # Fallback 2: BFS crawl from root
+        logger.info("No existing docs found, starting BFS crawl from docs.cyberark.com")
+        return self._crawl_discover_urls()
 
     def _parse_sitemap(
         self, url: str, depth: int = 0
@@ -319,6 +333,116 @@ class IncrementalScraper:
         logger.info("Inventoried %d URLs from existing scraped docs", len(results))
         return results
 
+    def _crawl_discover_urls(self) -> List[Tuple[str, Optional[str]]]:
+        """
+        BFS crawl from docs.cyberark.com to discover and scrape page URLs.
+
+        Used as a last-resort fallback when no sitemap exists and no
+        existing scraped_docs are available (e.g. fresh Docker build).
+        Follows links within docs.cyberark.com, applying product filters
+        during discovery.
+
+        Pages are saved as they are crawled (to avoid double-fetching),
+        with state recorded so that run() will skip already-scraped URLs.
+
+        Returns:
+            List of (url, None) tuples for all discovered URLs
+        """
+        from collections import deque
+
+        start_url = "https://docs.cyberark.com/"
+        visited: Set[str] = set()
+        queue: deque = deque([start_url])
+        discovered: List[Tuple[str, Optional[str]]] = []
+
+        # Crawl limit: max_pages caps how many pages to scrape (0 = unlimited)
+        crawl_limit = self.max_pages if self.max_pages > 0 else 25000
+
+        # Ensure output directory exists for saving pages during crawl
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+
+        logger.info(
+            "BFS crawl starting (limit: %d URLs, delay: %.1fs)",
+            crawl_limit,
+            self.delay,
+        )
+
+        while queue and len(discovered) < crawl_limit:
+            url = queue.popleft()
+
+            # Normalize: strip fragment
+            url = url.split("#")[0]
+
+            if url in visited:
+                continue
+            visited.add(url)
+
+            if not is_valid_doc_url(url):
+                continue
+
+            # Apply product filters early to avoid wasting time on excluded products
+            product_slug = self._extract_product_slug(url)
+            if self.include_products and product_slug and product_slug not in self.include_products:
+                continue
+            if self.exclude_products and product_slug and product_slug in self.exclude_products:
+                continue
+
+            discovered.append((url, None))
+
+            # Fetch page, extract links, and save content in one pass
+            try:
+                response = self.session.get(url, timeout=30)
+                response.raise_for_status()
+
+                # Extract and save page data (avoids re-fetching in run())
+                page_data = self.extract_page_data(url, response.content)
+                if page_data["content"] and len(page_data["content"]) >= 50:
+                    filename = sanitize_filename(url)
+                    filepath = self.output_dir / filename
+                    with open(filepath, "w", encoding="utf-8") as f:
+                        json.dump(page_data, f, indent=2, ensure_ascii=False)
+                    chash = content_hash(page_data["content"])
+                    self.state.record(url, chash, None)
+                    self.scraped += 1
+
+                # Extract links for further crawling
+                soup = BeautifulSoup(response.content, "lxml")
+                for link_tag in soup.find_all("a", href=True):
+                    href = link_tag["href"]
+                    absolute = urljoin(url, href).split("#")[0]
+                    if absolute not in visited and is_valid_doc_url(absolute):
+                        queue.append(absolute)
+
+            except Exception as e:
+                logger.debug("Crawl fetch error for %s: %s", url, e)
+                self.errors += 1
+
+            # Rate limiting
+            if queue:
+                time.sleep(self.delay)
+
+            # Progress logging every 100 pages
+            if len(discovered) % 100 == 0 and len(discovered) > 0:
+                logger.info(
+                    "BFS crawl progress: %d discovered, %d scraped, %d in queue",
+                    len(discovered),
+                    self.scraped,
+                    len(queue),
+                )
+
+        # Save state after crawl so run() knows these pages are done
+        if self.scraped > 0:
+            self.state.save()
+            self._crawl_scraped = True
+
+        logger.info(
+            "BFS crawl complete: %d URLs discovered, %d pages scraped (visited %d)",
+            len(discovered),
+            self.scraped,
+            len(visited),
+        )
+        return discovered
+
     # ------------------------------------------------------------------
     # Page extraction (matches existing scraper.py logic)
     # ------------------------------------------------------------------
@@ -392,6 +516,18 @@ class IncrementalScraper:
             return
 
         logger.info("Total URLs discovered: %d", len(url_list))
+
+        # If BFS crawl already scraped pages during discovery, skip re-scraping
+        if self._crawl_scraped:
+            logger.info(
+                "BFS crawl already scraped %d pages. Skipping re-scrape.",
+                self.scraped,
+            )
+            logger.info(
+                "Scraping complete: %d scraped, %d skipped, %d errors",
+                self.scraped, self.skipped, self.errors,
+            )
+            return
 
         # Filter to only URLs that need updating and match product filters
         urls_to_scrape: List[Tuple[str, Optional[str]]] = []

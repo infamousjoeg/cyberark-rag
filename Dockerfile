@@ -40,6 +40,7 @@ RUN echo "=== Scraping docs.cyberark.com (SaaS only, delay ${SCRAPE_DELAY}s) ===
         --full \
         --delay "${SCRAPE_DELAY}" \
         --exclude-products "${EXCLUDE_PRODUCTS}" \
+        --max-pages 10000 \
         --output-dir ./scraped_docs \
     && echo "=== Scrape complete: $(ls ./scraped_docs/*.json 2>/dev/null | wc -l) pages ===" \
     || echo "=== Scrape had errors, continuing with whatever was collected ==="

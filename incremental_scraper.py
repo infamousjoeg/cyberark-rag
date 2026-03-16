@@ -172,6 +172,8 @@ class IncrementalScraper:
         full: bool = False,
         dry_run: bool = False,
         max_pages: int = 0,
+        include_products: List[str] = None,
+        exclude_products: List[str] = None,
     ):
         """
         Initialize the incremental scraper.
@@ -182,12 +184,16 @@ class IncrementalScraper:
             full: If True, scrape all URLs regardless of state
             dry_run: If True, report what would be done without fetching
             max_pages: Maximum pages to scrape (0 = unlimited)
+            include_products: Only scrape URLs whose first path segment matches
+            exclude_products: Skip URLs whose first path segment matches
         """
         self.output_dir = output_dir or Settings.DOCS_DIR
         self.delay = delay
         self.full = full
         self.dry_run = dry_run
         self.max_pages = max_pages
+        self.include_products = include_products
+        self.exclude_products = exclude_products
 
         self.session = requests.Session()
         self.session.headers.update({"User-Agent": USER_AGENT})
@@ -198,6 +204,15 @@ class IncrementalScraper:
         self.scraped = 0
         self.skipped = 0
         self.errors = 0
+
+    @staticmethod
+    def _extract_product_slug(url: str) -> str:
+        """Extract the first URL path segment (product slug) from a URL."""
+        try:
+            path = urlparse(url).path.strip("/")
+            return path.split("/")[0] if path else ""
+        except Exception:
+            return ""
 
     # ------------------------------------------------------------------
     # Sitemap parsing
@@ -378,9 +393,18 @@ class IncrementalScraper:
 
         logger.info("Total URLs discovered: %d", len(url_list))
 
-        # Filter to only URLs that need updating
+        # Filter to only URLs that need updating and match product filters
         urls_to_scrape: List[Tuple[str, Optional[str]]] = []
         for url, lastmod in url_list:
+            # Apply product filters based on the first URL path segment
+            product_slug = self._extract_product_slug(url)
+            if self.include_products and product_slug not in self.include_products:
+                self.skipped += 1
+                continue
+            if self.exclude_products and product_slug in self.exclude_products:
+                self.skipped += 1
+                continue
+
             if self.full or self.state.needs_update(url, lastmod):
                 urls_to_scrape.append((url, lastmod))
             else:
@@ -490,8 +514,23 @@ def main() -> None:
         default=0,
         help="Maximum pages to scrape (0 = unlimited, useful for CI/Docker builds)",
     )
+    parser.add_argument(
+        "--include-products",
+        type=str,
+        default=None,
+        help="Comma-separated product URL slugs to include (e.g., 'conjur-cloud,privilege-cloud-standard')",
+    )
+    parser.add_argument(
+        "--exclude-products",
+        type=str,
+        default=None,
+        help="Comma-separated product URL slugs to exclude (e.g., 'pam-self-hosted,secrets-manager-sh')",
+    )
 
     args = parser.parse_args()
+
+    include_products = args.include_products.split(",") if args.include_products else None
+    exclude_products = args.exclude_products.split(",") if args.exclude_products else None
 
     scraper = IncrementalScraper(
         output_dir=args.output_dir,
@@ -499,6 +538,8 @@ def main() -> None:
         full=args.full,
         dry_run=args.dry_run,
         max_pages=args.max_pages,
+        include_products=include_products,
+        exclude_products=exclude_products,
     )
     scraper.run()
 

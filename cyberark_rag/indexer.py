@@ -12,10 +12,7 @@ from pathlib import Path
 from typing import List, Dict, Tuple
 from urllib.parse import urlparse
 
-import chromadb
-from chromadb.config import Settings as ChromaSettings
 import tiktoken
-from sentence_transformers import SentenceTransformer
 from tqdm import tqdm
 
 from cyberark_rag.bm25_index import BM25Index
@@ -70,6 +67,12 @@ class DocumentIndexer:
         self.collection = None
 
         if not self.bm25_only:
+            # Lazy imports: chromadb and sentence_transformers are heavy (torch, onnxruntime)
+            # In BM25-only mode these are never imported, saving ~300MB RAM and seconds of startup
+            import chromadb
+            from chromadb.config import Settings as ChromaSettings
+            from sentence_transformers import SentenceTransformer
+
             # Initialize ChromaDB client
             print(f"Initializing ChromaDB at {self.db_dir}...")
             self.client = chromadb.PersistentClient(
@@ -353,6 +356,7 @@ class DocumentIndexer:
             products: Set of unique product category names
         """
         cache_path = self.db_dir / 'products_cache.json'
+        cache_path.parent.mkdir(parents=True, exist_ok=True)
 
         cache_data = {
             'products': sorted(list(products)),

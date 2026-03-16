@@ -65,6 +65,11 @@ class BM25Index:
         self.tf: List[Dict[str, int]] = []  # Term frequency per document
         self._built: bool = False
 
+    @property
+    def doc_count(self) -> int:
+        """Return the number of documents in the index."""
+        return self.n_docs
+
     def add_document(self, doc_id: str, text: str, metadata: Dict = None) -> None:
         """
         Add a document to the index (pre-build).

@@ -1,10 +1,13 @@
 # Dockerfile for CyberArk RAG MCP Server on Render.com
 #
-# Build scrapes SaaS product docs from docs.cyberark.com and builds
-# the search index. Runtime serves MCP over streamable-http for Claude Web.
+# Build: scrapes SaaS product docs from docs.cyberark.com, builds BM25 index.
+# Runtime: serves MCP over streamable-http using BM25-only search.
 #
-# Render free tier: 500MB RAM, 120-min build timeout, no persistent disk.
-# SaaS-only scrape (~5-8K pages) fits in the build timeout at 0.2s delay.
+# Memory strategy: BM25-only mode avoids loading the embedding model (~300MB+)
+# and ChromaDB at runtime, keeping RAM well under the 512MB free-tier limit.
+# BM25 keyword search still provides good results for CyberArk terminology.
+#
+# Render free tier: 512MB RAM, 120-min build timeout, no persistent disk.
 
 FROM python:3.13-slim AS builder
 
@@ -18,10 +21,6 @@ RUN apt-get update && \
 # Install Python dependencies (cached layer)
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-
-# Pre-download embedding model during build
-ENV CYBERARK_RAG_MODEL=all-MiniLM-L6-v2
-RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
 
 # Copy application code + config files needed for scraping and indexing
 COPY cyberark_rag/ cyberark_rag/
@@ -45,9 +44,9 @@ RUN echo "=== Scraping docs.cyberark.com (SaaS only, delay ${SCRAPE_DELAY}s) ===
     && echo "=== Scrape complete: $(ls ./scraped_docs/*.json 2>/dev/null | wc -l) pages ===" \
     || echo "=== Scrape had errors, continuing with whatever was collected ==="
 
-# --- Build the search index ---
-RUN echo "=== Building search index ===" && \
-    CYBERARK_RAG_DOCS=./scraped_docs python -m cyberark_rag index \
+# --- Build BM25-only search index (no embedding model = saves ~300MB RAM) ---
+RUN echo "=== Building BM25 search index ===" && \
+    CYBERARK_RAG_DOCS=./scraped_docs python -m cyberark_rag index --bm25-only \
     && echo "=== Index build complete ===" \
     || echo "=== Index build failed, will fall back to sample_docs at runtime ==="
 
@@ -60,16 +59,13 @@ WORKDIR /app
 COPY --from=builder /usr/local/lib/python3.13/site-packages /usr/local/lib/python3.13/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 
-# Copy app code, scraped docs, and pre-built index
+# Copy app code, scraped docs, and pre-built BM25 index
 COPY --from=builder /app /app
 
-# Copy cached embedding model
-COPY --from=builder /root/.cache/huggingface /root/.cache/huggingface
-
-# Runtime configuration
+# Runtime configuration -- BM25-only mode keeps RAM under 512MB
 ENV PYTHONPATH=/app \
     PYTHONUNBUFFERED=1 \
-    CYBERARK_RAG_MODEL=all-MiniLM-L6-v2 \
+    CYBERARK_RAG_SEARCH_MODE=bm25 \
     MCP_TRANSPORT=streamable-http \
     PORT=8000
 

@@ -209,17 +209,28 @@ def cyberark_rag_list_products() -> str:
 
         if not raw_products:
             searcher = _get_searcher()
-            all_data = searcher.collection.get(
-                include=["metadatas"],
-                limit=100000,
-            )
-            raw_products_set = set()
-            for metadata in all_data["metadatas"]:
-                product = metadata.get("product_category", "")
-                if product:
-                    raw_products_set.add(product)
-            raw_products = sorted(raw_products_set)
-            logger.info("Found %d products from ChromaDB", len(raw_products))
+            if searcher.collection is not None:
+                all_data = searcher.collection.get(
+                    include=["metadatas"],
+                    limit=100000,
+                )
+                raw_products_set = set()
+                for metadata in all_data["metadatas"]:
+                    product = metadata.get("product_category", "")
+                    if product:
+                        raw_products_set.add(product)
+                raw_products = sorted(raw_products_set)
+                logger.info("Found %d products from ChromaDB", len(raw_products))
+            elif searcher._get_bm25() is not None:
+                # BM25-only mode: extract products from BM25 metadata
+                bm25 = searcher._get_bm25()
+                raw_products_set = set()
+                for doc_meta in bm25.doc_metadata:
+                    product = doc_meta.get("product_category", "")
+                    if product:
+                        raw_products_set.add(product)
+                raw_products = sorted(raw_products_set)
+                logger.info("Found %d products from BM25 index", len(raw_products))
 
         canonical_products = {}
         for raw_name in raw_products:
@@ -269,12 +280,15 @@ def cyberark_rag_get_index_stats() -> str:
         "CyberArk RAG Index Statistics",
         "-" * 40,
         f"Total chunks: {stats['total_chunks']}",
+        f"Search mode: {stats.get('search_mode', Settings.SEARCH_MODE)}",
         f"Collection: {stats['collection_name']}",
         f"Database: {stats['db_path']}",
-        f"Embedding model: {Settings.EMBEDDING_MODEL}",
         f"Chunk size: {Settings.CHUNK_SIZE} tokens",
         f"BM25 index: {bm25_status}",
     ]
+
+    if Settings.SEARCH_MODE != "bm25":
+        output.append(f"Embedding model: {Settings.EMBEDDING_MODEL}")
 
     if cache_info:
         output.append(f"Products indexed: {cache_info.get('total_products', 'unknown')}")

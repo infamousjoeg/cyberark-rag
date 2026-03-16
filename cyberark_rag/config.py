@@ -43,6 +43,10 @@ class Settings:
     CHUNK_SIZE: int = int(os.environ.get("CYBERARK_RAG_CHUNK_SIZE", "800"))
     CHUNK_OVERLAP: int = int(os.environ.get("CYBERARK_RAG_CHUNK_OVERLAP", "100"))
 
+    # Search mode: "hybrid" (vector + BM25), "bm25" (keyword only), "vector" (semantic only)
+    # BM25-only mode avoids loading the embedding model (~300MB+ RAM savings)
+    SEARCH_MODE: str = os.environ.get("CYBERARK_RAG_SEARCH_MODE", "hybrid")
+
     # Config files
     PRODUCT_ALIASES_PATH: Path = PROJECT_ROOT / "product_aliases.yaml"
     QUERY_EXPANSIONS_PATH: Path = PROJECT_ROOT / "query_expansions.yaml"

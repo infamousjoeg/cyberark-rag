@@ -37,7 +37,8 @@ class DocumentIndexer:
         embedding_model: str = None,
         chunk_size: int = None,
         chunk_overlap: int = None,
-        batch_size: int = 100
+        batch_size: int = 100,
+        bm25_only: bool = False,
     ):
         """
         Initialize the document indexer.
@@ -50,6 +51,7 @@ class DocumentIndexer:
             chunk_size: Target tokens per chunk
             chunk_overlap: Overlap tokens between chunks
             batch_size: Number of chunks to embed at once
+            bm25_only: If True, skip ChromaDB and embedding model (BM25 index only)
         """
         self.docs_dir = Path(docs_dir) if docs_dir else Settings.DOCS_DIR
         self.db_dir = Path(db_dir) if db_dir else Settings.DB_DIR
@@ -57,27 +59,36 @@ class DocumentIndexer:
         self.chunk_size = chunk_size if chunk_size is not None else Settings.CHUNK_SIZE
         self.chunk_overlap = chunk_overlap if chunk_overlap is not None else Settings.CHUNK_OVERLAP
         self.batch_size = batch_size
+        self.bm25_only = bm25_only
 
         # Initialize tokenizer for accurate token counting
         self.tokenizer = tiktoken.get_encoding("cl100k_base")
 
-        # Initialize ChromaDB client
-        print(f"Initializing ChromaDB at {self.db_dir}...")
-        self.client = chromadb.PersistentClient(
-            path=str(self.db_dir),
-            settings=ChromaSettings(anonymized_telemetry=False)
-        )
+        # ChromaDB and embedding model are only needed for vector indexing
+        self.client = None
+        self.model = None
+        self.collection = None
 
-        _model_name = embedding_model or Settings.EMBEDDING_MODEL
-        # Initialize embedding model
-        print(f"Loading embedding model '{_model_name}'...")
-        self.model = SentenceTransformer(_model_name)
+        if not self.bm25_only:
+            # Initialize ChromaDB client
+            print(f"Initializing ChromaDB at {self.db_dir}...")
+            self.client = chromadb.PersistentClient(
+                path=str(self.db_dir),
+                settings=ChromaSettings(anonymized_telemetry=False)
+            )
 
-        # Get or create collection
-        self.collection = self.client.get_or_create_collection(
-            name=self.collection_name,
-            metadata={"description": "CyberArk documentation embeddings"}
-        )
+            _model_name = embedding_model or Settings.EMBEDDING_MODEL
+            # Initialize embedding model
+            print(f"Loading embedding model '{_model_name}'...")
+            self.model = SentenceTransformer(_model_name)
+
+            # Get or create collection
+            self.collection = self.client.get_or_create_collection(
+                name=self.collection_name,
+                metadata={"description": "CyberArk documentation embeddings"}
+            )
+        else:
+            print("BM25-only mode: skipping ChromaDB and embedding model")
 
     def extract_product_category(self, url: str) -> str:
         """
@@ -296,30 +307,31 @@ class DocumentIndexer:
 
         print(f"\nCreated {len(all_chunks)} chunks from {len(documents)} documents")
 
-        # Batch embed and index
-        print(f"Embedding and indexing in batches of {self.batch_size}...")
+        # Vector indexing (skip in BM25-only mode)
+        if not self.bm25_only:
+            print(f"Embedding and indexing in batches of {self.batch_size}...")
 
-        for i in tqdm(range(0, len(all_chunks), self.batch_size), desc="Indexing batches"):
-            batch_chunks = all_chunks[i:i + self.batch_size]
-            batch_metadata = all_metadata[i:i + self.batch_size]
-            batch_ids = all_ids[i:i + self.batch_size]
+            for i in tqdm(range(0, len(all_chunks), self.batch_size), desc="Indexing batches"):
+                batch_chunks = all_chunks[i:i + self.batch_size]
+                batch_metadata = all_metadata[i:i + self.batch_size]
+                batch_ids = all_ids[i:i + self.batch_size]
 
-            # Generate embeddings
-            embeddings = self.model.encode(
-                batch_chunks,
-                show_progress_bar=False,
-                convert_to_numpy=True
-            ).tolist()
+                # Generate embeddings
+                embeddings = self.model.encode(
+                    batch_chunks,
+                    show_progress_bar=False,
+                    convert_to_numpy=True
+                ).tolist()
 
-            # Add to collection
-            self.collection.add(
-                embeddings=embeddings,
-                documents=batch_chunks,
-                metadatas=batch_metadata,
-                ids=batch_ids
-            )
+                # Add to collection
+                self.collection.add(
+                    embeddings=embeddings,
+                    documents=batch_chunks,
+                    metadatas=batch_metadata,
+                    ids=batch_ids
+                )
 
-        print(f"\n✓ Successfully indexed {len(all_chunks)} chunks into ChromaDB!")
+            print(f"\n✓ Successfully indexed {len(all_chunks)} chunks into ChromaDB!")
 
         # Build BM25 keyword index from the same chunks
         print("Building BM25 keyword index...")
@@ -362,11 +374,21 @@ class DocumentIndexer:
         Returns:
             Dictionary with collection statistics
         """
-        count = self.collection.count()
+        if self.collection is not None:
+            count = self.collection.count()
+        else:
+            # BM25-only mode: read count from BM25 index
+            try:
+                bm25 = BM25Index.load()
+                count = bm25.doc_count
+            except Exception:
+                count = 0
+
         return {
             'total_chunks': count,
             'collection_name': self.collection_name,
-            'db_path': str(self.db_dir)
+            'db_path': str(self.db_dir),
+            'bm25_only': self.bm25_only,
         }
 
     def run(self) -> None:
@@ -435,6 +457,12 @@ def main():
         default=100,
         help='Batch size for embedding (default: 100)'
     )
+    parser.add_argument(
+        '--bm25-only',
+        action='store_true',
+        default=False,
+        help='Build only BM25 index, skip ChromaDB and embedding model (saves ~300MB+ RAM)'
+    )
 
     args = parser.parse_args()
 
@@ -443,7 +471,8 @@ def main():
         db_dir=args.db_dir,
         chunk_size=args.chunk_size,
         chunk_overlap=args.chunk_overlap,
-        batch_size=args.batch_size
+        batch_size=args.batch_size,
+        bm25_only=args.bm25_only,
     )
 
     indexer.run()

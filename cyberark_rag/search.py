@@ -1,20 +1,19 @@
 """
-Semantic Search Module for CyberArk Documentation
+Search Module for CyberArk Documentation
 
-This module provides semantic search capabilities over the indexed documentation.
+This module provides search capabilities over the indexed documentation.
+Supports three modes via CYBERARK_RAG_SEARCH_MODE env var:
+  - hybrid: vector (ChromaDB) + BM25 keyword search with Reciprocal Rank Fusion
+  - vector: ChromaDB semantic search only
+  - bm25: BM25 keyword search only (low memory, no embedding model needed)
 """
 
 import sys
 from typing import List, Dict, Optional
 from pathlib import Path
 
-import chromadb
-from chromadb.config import Settings as ChromaSettings
-from sentence_transformers import SentenceTransformer
-
 from cyberark_rag.bm25_index import BM25Index
 from cyberark_rag.config import Settings
-from cyberark_rag.hybrid_search import hybrid_search
 from cyberark_rag.query_expansion import get_expander
 from cyberark_rag.content_classifier import get_classifier, classify_content_primary
 from cyberark_rag.query_intent import get_detector, detect_intent
@@ -22,14 +21,18 @@ from cyberark_rag.query_intent import get_detector, detect_intent
 
 class DocumentSearcher:
     """
-    Semantic search over CyberArk documentation.
+    Search over CyberArk documentation.
+
+    In 'bm25' mode, only the BM25 keyword index is loaded (low memory).
+    In 'vector' or 'hybrid' mode, ChromaDB and sentence-transformers are also loaded.
     """
 
     def __init__(
         self,
         db_dir: str = None,
         collection_name: str = None,
-        embedding_model: str = None
+        embedding_model: str = None,
+        search_mode: str = None,
     ):
         """
         Initialize the document searcher.
@@ -38,24 +41,49 @@ class DocumentSearcher:
             db_dir: Directory containing ChromaDB (defaults to Settings.DB_DIR)
             collection_name: Name of the ChromaDB collection
             embedding_model: SentenceTransformer model name
+            search_mode: Override Settings.SEARCH_MODE (hybrid/bm25/vector)
         """
         self.db_dir = Path(db_dir) if db_dir else Settings.DB_DIR
         self.collection_name = collection_name or Settings.COLLECTION_NAME
+        self.search_mode = search_mode or Settings.SEARCH_MODE
 
-        # Check if database exists
+        # These are only initialized when vector search is needed
+        self.client = None
+        self.collection = None
+        self.model = None
+
+        # Lazy-loaded BM25 index
+        self._bm25: Optional[BM25Index] = None
+
+        if self.search_mode in ("vector", "hybrid"):
+            self._init_vector_search(embedding_model)
+        elif self.search_mode == "bm25":
+            # BM25-only mode: just verify the index exists
+            if not Settings.BM25_PATH.exists():
+                raise FileNotFoundError(
+                    f"BM25 index not found at {Settings.BM25_PATH}. "
+                    "Please run the indexer first: python -m cyberark_rag index"
+                )
+        else:
+            raise ValueError(f"Unknown search mode: {self.search_mode}")
+
+    def _init_vector_search(self, embedding_model: str = None) -> None:
+        """Initialize ChromaDB and embedding model (heavy imports)."""
+        import chromadb
+        from chromadb.config import Settings as ChromaSettings
+        from sentence_transformers import SentenceTransformer
+
         if not self.db_dir.exists():
             raise FileNotFoundError(
                 f"Database not found at {self.db_dir}. "
                 "Please run the indexer first: python -m cyberark_rag index"
             )
 
-        # Initialize ChromaDB client
         self.client = chromadb.PersistentClient(
             path=str(self.db_dir),
             settings=ChromaSettings(anonymized_telemetry=False)
         )
 
-        # Load collection
         try:
             self.collection = self.client.get_collection(name=self.collection_name)
         except Exception:
@@ -64,11 +92,7 @@ class DocumentSearcher:
                 "Please run the indexer first."
             )
 
-        # Initialize embedding model
         self.model = SentenceTransformer(embedding_model or Settings.EMBEDDING_MODEL)
-
-        # Lazy-loaded BM25 index
-        self._bm25: Optional[BM25Index] = None
 
     def _get_bm25(self) -> Optional[BM25Index]:
         """Lazy-load BM25 index if available."""
@@ -126,7 +150,7 @@ class DocumentSearcher:
         use_hybrid: bool = True,
     ) -> List[Dict]:
         """
-        Perform semantic search over documentation.
+        Search documentation using the configured search mode.
 
         Args:
             query: Search query
@@ -134,25 +158,35 @@ class DocumentSearcher:
             filter_product: Optional product category filter
             use_query_expansion: Whether to expand query with related terms (default: True)
             use_reranking: Whether to re-rank by query intent (default: True)
+            use_hybrid: Whether to use hybrid search (ignored in bm25 mode)
 
         Returns:
             List of search results with content, metadata, and scores
         """
-        # Step 1: Get vector search results (with optional expansion)
-        fetch_k = top_k * 3 if use_hybrid else top_k
+        # BM25-only mode: skip all vector search
+        if self.search_mode == "bm25":
+            results = self._bm25_search(query, top_k=top_k * 3, filter_product=filter_product)
+            results = results[:top_k]
+            if use_reranking and results:
+                results = self.rerank_by_intent(query, results)
+            return results
+
+        # Vector or hybrid mode
+        fetch_k = top_k * 3 if (use_hybrid and self.search_mode == "hybrid") else top_k
         if use_query_expansion:
             vector_results = self.search_with_expansion(query, fetch_k, filter_product, use_reranking=False)
         else:
             vector_results = self._base_search(query, fetch_k, filter_product)
 
-        # Step 2: Hybrid search with BM25 if enabled and available
-        if use_hybrid and self._get_bm25() is not None:
+        # Hybrid search with BM25 if enabled and available
+        if use_hybrid and self.search_mode == "hybrid" and self._get_bm25() is not None:
+            from cyberark_rag.hybrid_search import hybrid_search
             bm25_results = self._bm25_search(query, top_k=fetch_k, filter_product=filter_product)
             results = hybrid_search(vector_results, bm25_results)[:top_k]
         else:
             results = vector_results[:top_k]
 
-        # Step 3: Apply intent-based re-ranking
+        # Apply intent-based re-ranking
         if use_reranking and results:
             results = self.rerank_by_intent(query, results)
 
@@ -359,17 +393,25 @@ class DocumentSearcher:
 
     def get_stats(self) -> Dict:
         """
-        Get statistics about the collection.
+        Get statistics about the search index.
 
         Returns:
-            Dictionary with collection statistics
+            Dictionary with index statistics
         """
-        count = self.collection.count()
-        return {
-            'total_chunks': count,
+        stats = {
             'collection_name': self.collection_name,
-            'db_path': str(self.db_dir)
+            'db_path': str(self.db_dir),
+            'search_mode': self.search_mode,
         }
+
+        if self.collection is not None:
+            stats['total_chunks'] = self.collection.count()
+        elif self._get_bm25() is not None:
+            stats['total_chunks'] = self._bm25.doc_count
+        else:
+            stats['total_chunks'] = 0
+
+        return stats
 
     def print_results(
         self,

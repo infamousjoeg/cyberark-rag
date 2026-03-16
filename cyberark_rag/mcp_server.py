@@ -366,11 +366,10 @@ def main():
             args.host,
             args.port,
         )
-        mcp.run(
-            transport="streamable-http",
-            host=args.host,
-            port=args.port,
-        )
+        # host/port are set on the FastMCP instance settings, not passed to run()
+        mcp.settings.host = args.host
+        mcp.settings.port = args.port
+        mcp.run(transport="streamable-http")
     else:
         logger.info("Starting MCP server (stdio)")
         mcp.run(transport="stdio")

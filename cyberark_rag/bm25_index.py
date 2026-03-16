@@ -197,6 +197,7 @@ class BM25Index:
             path: File path (defaults to Settings.BM25_PATH)
         """
         path = path or Settings.BM25_PATH
+        path.parent.mkdir(parents=True, exist_ok=True)
         data = {
             "k1": self.k1,
             "b": self.b,

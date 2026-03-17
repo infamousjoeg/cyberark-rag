@@ -254,7 +254,7 @@ class IncrementalScraper:
             return existing
 
         # Fallback 2: BFS crawl from root
-        logger.info("No existing docs found, starting BFS crawl from docs.cyberark.com")
+        logger.info("No existing docs found, starting BFS crawl from docs.cyberark.com product pages")
         return self._crawl_discover_urls()
 
     def _parse_sitemap(
@@ -350,9 +350,26 @@ class IncrementalScraper:
         """
         from collections import deque
 
-        start_url = "https://docs.cyberark.com/"
+        # Seed URLs: the root page returns 404, so we start from known
+        # product landing pages that contain navigation links.
+        seed_urls = [
+            "https://docs.cyberark.com/",
+            "https://docs.cyberark.com/privilege-cloud-standard/Latest/en/Content/Landing-Pages/LPPrivilegeCloud.htm",
+            "https://docs.cyberark.com/privilege-cloud-shared-services/Latest/en/Content/Landing-Pages/LPSharedServices.htm",
+            "https://docs.cyberark.com/conjur-cloud/Latest/en/Content/Landing-Pages/LP-ConjurCloud.htm",
+            "https://docs.cyberark.com/conjur-enterprise/Latest/en/Content/Landing-Pages/LP-ConjurEnterprise.htm",
+            "https://docs.cyberark.com/secrets-hub/Latest/en/Content/Landing-Pages/LP-SecretsHub.htm",
+            "https://docs.cyberark.com/ispss-deployment/Latest/en/Content/Landing-Pages/LP-Deployment.htm",
+            "https://docs.cyberark.com/identity/Latest/en/Content/Landing-Pages/LP-Identity.htm",
+            "https://docs.cyberark.com/epm/Latest/en/Content/Landing-Pages/LP-EPM.htm",
+            "https://docs.cyberark.com/dpa/Latest/en/Content/Landing-Pages/LP-DPA.htm",
+            "https://docs.cyberark.com/remote-access/Latest/en/Content/Landing-Pages/LP-RemoteAccess.htm",
+            "https://docs.cyberark.com/workforce-password-management/Latest/en/Content/Landing-Pages/LP-WPM.htm",
+            "https://docs.cyberark.com/secure-web-sessions/Latest/en/Content/Landing-Pages/LP-SWS.htm",
+            "https://docs.cyberark.com/secure-workload-access/Latest/en/Content/Landing-Pages/LP-SWA.htm",
+        ]
         visited: Set[str] = set()
-        queue: deque = deque([start_url])
+        queue: deque = deque(seed_urls)
         discovered: List[Tuple[str, Optional[str]]] = []
 
         # Crawl limit: max_pages caps how many pages to scrape (0 = unlimited)

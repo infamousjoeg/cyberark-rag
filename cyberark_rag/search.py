@@ -54,6 +54,7 @@ class DocumentSearcher:
 
         # Lazy-loaded BM25 index
         self._bm25: Optional[BM25Index] = None
+        self._bm25_mtime: float = 0.0  # mtime when last loaded
 
         if self.search_mode in ("vector", "hybrid"):
             self._init_vector_search(embedding_model)
@@ -95,12 +96,27 @@ class DocumentSearcher:
         self.model = SentenceTransformer(embedding_model or Settings.EMBEDDING_MODEL)
 
     def _get_bm25(self) -> Optional[BM25Index]:
-        """Lazy-load BM25 index if available."""
-        if self._bm25 is None and Settings.BM25_PATH.exists():
+        """Lazy-load BM25 index, auto-reloading if the file changed on disk."""
+        bm25_path = Settings.BM25_PATH
+        if not bm25_path.exists():
+            return self._bm25
+
+        try:
+            current_mtime = bm25_path.stat().st_mtime
+        except OSError:
+            return self._bm25
+
+        if self._bm25 is None or current_mtime > self._bm25_mtime:
             try:
                 self._bm25 = BM25Index.load()
+                self._bm25_mtime = current_mtime
+                print(
+                    f"BM25 index loaded: {self._bm25.doc_count} docs",
+                    file=sys.stderr,
+                )
             except Exception as e:
                 print(f"Warning: Failed to load BM25 index: {e}", file=sys.stderr)
+
         return self._bm25
 
     def _bm25_search(

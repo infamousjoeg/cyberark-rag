@@ -1,13 +1,13 @@
 # Dockerfile for CyberArk RAG MCP Server on Render.com
 #
 # Strategy:
-#   - Build stage: install deps and copy code only (no scraping)
-#   - Runtime: start MCP server immediately with sample_docs,
-#     then scrape docs.cyberark.com in the background and rebuild
-#     the BM25 index when done.
+#   - Pre-built BM25 index is committed in deploy/ (built locally)
+#   - Docker just copies the index and starts the server
+#   - No runtime scraping needed
 #
-# Why runtime scraping: Render's Docker build environment cannot
-# reach docs.cyberark.com, so scraping must happen at runtime.
+# To update the index, run locally:
+#   ./scripts/build_deploy_index.sh
+#   git add deploy/ && git commit && git push
 #
 # Memory strategy: BM25-only mode avoids loading the embedding model
 # (~300MB+) and ChromaDB, keeping RAM under the 512MB free-tier limit.
@@ -29,10 +29,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code + config files
 COPY cyberark_rag/ cyberark_rag/
-COPY incremental_scraper.py .
 COPY product_aliases.yaml query_expansions.yaml ./
-COPY sample_docs/ sample_docs/
-COPY scripts/ scripts/
+
+# Copy pre-built index
+COPY deploy/ deploy/
+
+# Copy entrypoint
 COPY scripts/docker_entrypoint.sh ./entrypoint.sh
 
 # --- Runtime stage (smaller image) ---
@@ -44,7 +46,7 @@ WORKDIR /app
 COPY --from=builder /usr/local/lib/python3.13/site-packages /usr/local/lib/python3.13/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 
-# Copy app code and sample docs
+# Copy app code and pre-built index
 COPY --from=builder /app /app
 
 # Runtime configuration -- BM25-only mode keeps RAM under 512MB
@@ -52,10 +54,7 @@ ENV PYTHONPATH=/app \
     PYTHONUNBUFFERED=1 \
     CYBERARK_RAG_SEARCH_MODE=bm25 \
     MCP_TRANSPORT=streamable-http \
-    PORT=8000 \
-    SCRAPE_DELAY=0.5 \
-    MAX_PAGES=10000 \
-    EXCLUDE_PRODUCTS=pam-self-hosted,secrets-manager-sh,conjur-open-source,mis-self-hosted,mis-saas
+    PORT=8000
 
 EXPOSE 8000
 

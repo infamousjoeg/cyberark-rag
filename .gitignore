@@ -6,6 +6,9 @@ chroma_db.backup_*/
 bm25_index.pkl
 scraper_state.json
 
+# Pre-built deploy index (tracked)
+!deploy/
+
 # Python
 __pycache__/
 *.pyc

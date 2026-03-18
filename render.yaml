@@ -17,3 +17,5 @@ services:
         value: bm25
       - key: PYTHONUNBUFFERED
         value: "1"
+      - key: MCP_ALLOWED_HOST
+        value: "cyberark-rag-mcp.onrender.com"

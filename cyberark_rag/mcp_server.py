@@ -369,6 +369,13 @@ def main():
         # host/port are set on the FastMCP instance settings, not passed to run()
         mcp.settings.host = args.host
         mcp.settings.port = args.port
+        # Allow external hosts (e.g., Render.com) through DNS rebinding protection
+        allowed_host = os.environ.get("MCP_ALLOWED_HOST")
+        if allowed_host:
+            mcp.settings.transport_security.allowed_hosts.append(allowed_host)
+            mcp.settings.transport_security.allowed_origins.append(
+                f"https://{allowed_host}"
+            )
         mcp.run(transport="streamable-http")
     else:
         logger.info("Starting MCP server (stdio)")

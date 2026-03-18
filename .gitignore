@@ -3,11 +3,13 @@ scraped_docs/
 chroma_db/
 chroma_db.backup/
 chroma_db.backup_*/
-bm25_index.pkl
+/bm25_index.pkl
 scraper_state.json
 
-# Pre-built deploy index (tracked)
+# Pre-built index for deployment (tracked via Git LFS)
 !deploy/
+!deploy/bm25_index.pkl
+!deploy/products_cache.json
 
 # Python
 __pycache__/

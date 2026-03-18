@@ -1,73 +1,56 @@
 #!/bin/bash
-# Build a BM25 index locally and stage it for deployment.
+# Build the pre-built BM25 index for deployment.
 #
-# Run this on your Mac whenever you want to refresh the deployed index:
-#   ./scripts/build_deploy_index.sh
-#   git add deploy/ && git commit -m "data: update BM25 index" && git push
+# Run this locally on your Mac to scrape docs, build the index,
+# and copy artifacts to deploy/. Then commit and push to trigger
+# a Render rebuild with real data baked in.
 #
-# Excludes: pam-self-hosted, secrets-manager-sh, conjur-open-source, mis-self-hosted, mis-saas
+# Usage:
+#   bash scripts/build_deploy_index.sh
+#   bash scripts/build_deploy_index.sh --incremental   # skip --full flag
 
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-cd "$PROJECT_ROOT"
-
 EXCLUDE="pam-self-hosted,secrets-manager-sh,conjur-open-source,mis-self-hosted,mis-saas"
-DOCS_DIR="${CYBERARK_RAG_DOCS:-./scraped_docs}"
-DEPLOY_DIR="./deploy"
+FULL_FLAG="--full"
 
-echo "=== CyberArk RAG Deploy Index Builder ==="
-echo "Docs dir: ${DOCS_DIR}"
+if [ "$1" = "--incremental" ]; then
+    FULL_FLAG=""
+    echo "=== Incremental mode (only new/changed pages) ==="
+fi
+
+echo "=== Step 1: Scraping docs.cyberark.com (SaaS products only) ==="
 echo "Excluding: ${EXCLUDE}"
-echo ""
+python incremental_scraper.py ${FULL_FLAG} \
+  --exclude-products "${EXCLUDE}" \
+  --output-dir ./scraped_docs
 
-# Step 1: Scrape (incremental by default, use --full for first run)
-SCRAPE_FLAGS="${*:---full}"
-echo "Step 1: Scraping docs.cyberark.com (${SCRAPE_FLAGS})..."
-python incremental_scraper.py \
-    ${SCRAPE_FLAGS} \
-    --exclude-products "${EXCLUDE}" \
-    --output-dir "${DOCS_DIR}"
-
-SCRAPED_COUNT=$(ls "${DOCS_DIR}"/*.json 2>/dev/null | wc -l | tr -d ' ')
+SCRAPED_COUNT=$(ls ./scraped_docs/*.json 2>/dev/null | wc -l | tr -d ' ')
 echo "Scraped docs: ${SCRAPED_COUNT}"
 
-if [ "${SCRAPED_COUNT}" -lt 10 ]; then
-    echo "ERROR: Too few docs scraped (${SCRAPED_COUNT}). Aborting."
-    exit 1
-fi
-
-# Step 2: Build BM25 index
-echo ""
-echo "Step 2: Building BM25 index..."
+echo "=== Step 2: Building BM25 index ==="
 python -m cyberark_rag index --bm25-only
 
-# Step 3: Copy to deploy/
+echo "=== Step 3: Copying artifacts to deploy/ ==="
+mkdir -p deploy
+cp chroma_db/bm25_index.pkl deploy/
+cp chroma_db/products_cache.json deploy/
+
 echo ""
-echo "Step 3: Copying index to deploy/..."
-mkdir -p "${DEPLOY_DIR}"
+echo "=== Done ==="
+ls -lh deploy/
+echo ""
 
-DB_DIR="${CYBERARK_RAG_DB:-./chroma_db}"
-BM25_PATH="${DB_DIR}/bm25_index.pkl"
-
-if [ ! -f "${BM25_PATH}" ]; then
-    # Fallback: check project root
-    BM25_PATH="./bm25_index.pkl"
-fi
-
-if [ -f "${BM25_PATH}" ]; then
-    cp "${BM25_PATH}" "${DEPLOY_DIR}/bm25_index.pkl"
-    SIZE=$(du -sh "${DEPLOY_DIR}/bm25_index.pkl" | cut -f1)
-    echo "Index copied to deploy/bm25_index.pkl (${SIZE})"
+# Check if Git LFS is needed
+BM25_SIZE=$(stat -f%z deploy/bm25_index.pkl 2>/dev/null || stat -c%s deploy/bm25_index.pkl 2>/dev/null)
+if [ "${BM25_SIZE}" -gt 104857600 ]; then
+    echo "WARNING: bm25_index.pkl is > 100MB. Set up Git LFS:"
+    echo "  git lfs install"
+    echo "  git lfs track 'deploy/bm25_index.pkl'"
+    echo "  git add .gitattributes"
 else
-    echo "ERROR: BM25 index not found at ${BM25_PATH}"
-    exit 1
+    echo "bm25_index.pkl is under 100MB -- no Git LFS needed."
 fi
 
 echo ""
-echo "=== Done! ==="
-echo "Next steps:"
-echo "  git add deploy/"
-echo "  git commit -m 'data: update BM25 index'"
-echo "  git push"
+echo "Commit deploy/ and push to trigger Render rebuild."

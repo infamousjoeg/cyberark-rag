@@ -11,9 +11,9 @@ services:
     envVars:
       - key: PORT
         value: "8000"
-      - key: CYBERARK_RAG_MODEL
-        value: all-MiniLM-L6-v2
       - key: MCP_TRANSPORT
         value: streamable-http
+      - key: CYBERARK_RAG_SEARCH_MODE
+        value: bm25
       - key: PYTHONUNBUFFERED
         value: "1"

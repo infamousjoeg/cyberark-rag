@@ -45,6 +45,7 @@ ENV PYTHONPATH=/app \
     PYTHONUNBUFFERED=1 \
     CYBERARK_RAG_SEARCH_MODE=bm25 \
     MCP_TRANSPORT=streamable-http \
+    MCP_ALLOWED_HOST=cyberark-rag-mcp.onrender.com \
     PORT=8000
 
 EXPOSE 8000

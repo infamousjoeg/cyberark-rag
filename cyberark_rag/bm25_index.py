@@ -193,17 +193,30 @@ class BM25Index:
         """
         Save index to disk.
 
+        Omits doc_tokens (only needed during build) to reduce file size
+        and memory footprint on constrained deployments.
+
         Args:
             path: File path (defaults to Settings.BM25_PATH)
         """
         path = path or Settings.BM25_PATH
         path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Strip metadata to essentials only (url, title, product_category,
+        # chunk_index, content_type) to reduce memory
+        slim_metadata = []
+        keep_keys = {"url", "title", "product_category", "chunk_index",
+                     "content_type", "original_text"}
+        for meta in self.doc_metadata:
+            slim_metadata.append({k: v for k, v in meta.items()
+                                  if k in keep_keys})
+
         data = {
             "k1": self.k1,
             "b": self.b,
             "doc_ids": self.doc_ids,
-            "doc_tokens": self.doc_tokens,
-            "doc_metadata": self.doc_metadata,
+            # doc_tokens omitted -- only needed during build(), not search
+            "doc_metadata": slim_metadata,
             "doc_lengths": self.doc_lengths,
             "avg_dl": self.avg_dl,
             "n_docs": self.n_docs,
@@ -211,7 +224,7 @@ class BM25Index:
             "tf": self.tf,
         }
         with open(path, "wb") as f:
-            pickle.dump(data, f)
+            pickle.dump(data, f, protocol=pickle.HIGHEST_PROTOCOL)
         logger.info("BM25 index saved to %s (%d docs)", path, self.n_docs)
 
     @classmethod
@@ -231,7 +244,7 @@ class BM25Index:
 
         idx = cls(k1=data["k1"], b=data["b"])
         idx.doc_ids = data["doc_ids"]
-        idx.doc_tokens = data["doc_tokens"]
+        idx.doc_tokens = data.get("doc_tokens", [])  # may be omitted in slim format
         idx.doc_metadata = data["doc_metadata"]
         idx.doc_lengths = data["doc_lengths"]
         idx.avg_dl = data["avg_dl"]
